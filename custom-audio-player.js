@@ -1,14 +1,15 @@
 class CustomAudioPlayer extends HTMLElement {
   constructor() {
     super();
-    this.isPlaying = false;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
     this.skipAmount = 15;
     this.rewindAriaLabel = `Rewind ${this.skipAmount} seconds`;
     this.fastForwardAriaLabel = `Fast-forward ${this.skipAmount} seconds`;
-    this.muteButtonTextUnmuted = "Mute";
-    this.muteButtonTextMuted = "Unmute";
+    this.muteButtonIsUnmuted = "Mute";
+    this.muteButtonIsMuted = "Unmute";
+    this.playButtonIsPlaying = "Pause";
+    this.playButtonIsPaused = "Play";
     this.attachShadow({ mode: "open" });
     this.addStyles();
     this.buildPlayer();
@@ -44,7 +45,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.controlsContainer.className = "controls-container";
 
     this.playPauseBtn = document.createElement("button");
-    this.playPauseBtn.className = "play-pause";
+    this.playPauseBtn.className = "main-play-btn";
     this.playPauseBtn.textContent = "Play";
 
     this.audio = document.createElement("audio");
@@ -111,8 +112,8 @@ class CustomAudioPlayer extends HTMLElement {
     this.seekBar.className = "seek-bar";
     this.seekBar.type = "range";
     this.seekBar.min = "0";
-    this.seekBar.max = "1"; // will be updated on loadedmetadata
-    this.seekBar.step = "0.01"; // will be updated on loadedmetadata
+    this.seekBar.max = "1";
+    this.seekBar.step = "0.01";
     this.seekBar.value = "0";
 
     // Time + Skip + Seek container
@@ -125,7 +126,7 @@ class CustomAudioPlayer extends HTMLElement {
   buildVolume() {
     this.muteToggle = document.createElement("button");
     this.muteToggle.className = "mute-toggle";
-    this.muteToggle.textContent = this.muteButtonTextUnmuted;
+    this.muteToggle.textContent = this.muteButtonIsUnmuted;
 
     this.volumeAndMuteContainer = document.createElement("div");
     this.volumeAndMuteContainer.className = "volume-and-mute-container";
@@ -146,30 +147,24 @@ class CustomAudioPlayer extends HTMLElement {
 
   updateMuteButton() {
     this.muteToggle.textContent = this.audio.muted
-      ? this.muteButtonTextMuted
-      : this.muteButtonTextUnmuted;
+      ? this.muteButtonIsMuted
+      : this.muteButtonIsUnmuted;
   }
 
   setupEventListeners() {
-    this.playPauseBtn.addEventListener("click", () => this.togglePlay());
+    this.playPauseBtn.addEventListener("click", () => {
+      this.updateTrackPlayButtons();
+      this.togglePlay();
+    });
     this.audio.addEventListener("play", () => {
-      this.pauseLastPlayedTrack();
-      this.isPlaying = true;
-      this.setAttribute("is-playing", "");
       this.updatePlayPauseButton();
     });
     this.audio.addEventListener("pause", () => {
-      this.isPlaying = false;
-      this.removeAttribute("is-playing");
       this.updatePlayPauseButton();
     });
     this.volumeSlider.addEventListener("input", () => {
       this.audio.volume = parseFloat(this.volumeSlider.value);
-      if (this.audio.volume === 0) {
-        this.audio.muted = true;
-      } else {
-        this.audio.muted = false;
-      }
+      this.audio.muted = this.audio.volume === 0;
       this.updateMuteButton();
     });
     this.seekBar.addEventListener("input", () => {
@@ -190,11 +185,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.muteToggle.addEventListener("click", () => {
       this.audio.muted = !this.audio.muted;
       this.updateMuteButton();
-      if (this.audio.muted) {
-        this.volumeSlider.value = "0";
-      } else {
-        this.volumeSlider.value = "10";
-      }
+      this.volumeSlider.value = this.audio.muted ? "0" : "1";
     });
     this.fastForwardButton.addEventListener(
       "click",
@@ -248,7 +239,9 @@ class CustomAudioPlayer extends HTMLElement {
   }
 
   updatePlayPauseButton() {
-    this.playPauseBtn.textContent = this.audio.paused ? "Play" : "Pause";
+    this.playPauseBtn.textContent = this.audio.paused
+      ? this.playButtonIsPaused
+      : this.playButtonIsPlaying;
   }
 
   pauseLastPlayedTrack() {
@@ -258,10 +251,78 @@ class CustomAudioPlayer extends HTMLElement {
     //     player.audio.pause();
     //   }
     // });
-    const lastPlayedTrack = document.querySelector("[is-playing]");
-    if (lastPlayedTrack) {
-      lastPlayedTrack.audio.pause();
+    // const lastPlayedTrack = document.querySelector("[is-playing]");
+    // if (lastPlayedTrack) {
+    //   lastPlayedTrack.audio.pause();
+    // }
+  }
+
+  updateTrackPlayButtons(activeBtn) {
+    Array.from(
+      this.trackListContainer.querySelectorAll(".track-play-btn")
+    ).forEach((btn) => (btn.textContent = this.playButtonIsPaused));
+    if (activeBtn) activeBtn.textContent = this.playButtonIsPlaying;
+  }
+
+  setTrackList(trackList) {
+    if (this.trackListContainer) {
+      this.trackListContainer.remove();
     }
+    this.trackListContainer = document.createElement("div");
+    this.trackListContainer.className = "track-list";
+
+    if (trackList.length > 0) {
+      this.audio.src = trackList[0].src;
+      this.audioTitle.textContent = trackList[0].title;
+    }
+
+    trackList.forEach((track, idx) => {
+      const item = document.createElement("div");
+      item.className = "track-list-item";
+
+      const title = document.createElement("span");
+      title.className = "track-title";
+      title.textContent = track.title;
+
+      const durationSpan = document.createElement("span");
+      durationSpan.className = "track-duration";
+      durationSpan.textContent = "...";
+      const tempAudio = new Audio(track.src);
+      tempAudio.addEventListener("loadedmetadata", () => {
+        durationSpan.textContent = this.formatTime(tempAudio.duration);
+      });
+
+      const trackPlayPauseButton = document.createElement("button");
+      trackPlayPauseButton.className = "track-play-btn";
+      trackPlayPauseButton.textContent =
+        this.audio.src.endsWith(track.src) && !this.audio.paused
+          ? this.playButtonIsPlaying
+          : this.playButtonIsPaused;
+      trackPlayPauseButton.addEventListener("click", () => {
+        if (this.audio.src.endsWith(track.src)) {
+          if (!this.audio.paused) {
+            this.audio.pause();
+            this.updateTrackPlayButtons();
+          } else {
+            this.audio.play();
+            this.updateTrackPlayButtons(trackPlayPauseButton);
+          }
+        } else {
+          this.audio.src = track.src;
+          this.audioTitle.textContent = track.title;
+          this.audio.currentTime = 0;
+          this.audio.play();
+          this.updateTrackPlayButtons(trackPlayPauseButton);
+        }
+      });
+
+      item.appendChild(trackPlayPauseButton);
+      item.appendChild(title);
+      item.appendChild(durationSpan);
+      this.trackListContainer.appendChild(item);
+    });
+
+    this.playerContainer.appendChild(this.trackListContainer);
   }
 }
 
