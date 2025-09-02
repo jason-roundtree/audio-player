@@ -1,0 +1,121 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+button {
+  padding: 8px;
+  /* background: #eed6fa; */
+}
+.audio-player {
+  /* --bitcount-left-padding: 4px; */
+  --primary-font: "Bitcount Prop Double", system-ui, sans-serif;
+  --small-button-padding: 2px 4px;
+  padding: 8px 10px 10px;
+  /* display: flex;
+  align-items: center; */
+  background: #fff;
+  height: fit-content;
+  margin-block: 10px;
+  /* color: white; */
+  border: 2px solid #000;
+}
+:host([is-playing]) .audio-player {
+  /* box-shadow: 0 0 20px rgb(238, 25, 210); */
+  background: #eed6fa;
+}
+.audio-info {
+  padding-block-end: 10px;
+}
+.audio-title {
+  font-size: 2em;
+}
+.controls-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.play-pause {
+  align-self: stretch;
+  /* width: 15%; */
+  min-width: 65px;
+  flex: 0;
+}
+.time-and-seek-container {
+  display: flex;
+  flex-direction: column;
+  flex: 4;
+  /* width: 65%; */
+}
+.volume-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /* padding-block-start: 19px; */
+}
+.mute-toggle {
+  width: fit-content;
+  font-size: 1.1em;
+  padding: var(--small-button-padding);
+  /* margin-inline-end: 4px; */
+  /* padding-inline-start: var(--bitcount-left-padding); */
+}
+.skip-time-button-container {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.skip-time-button-container button {
+  padding: var(--small-button-padding);
+  font-weight: bold;
+}
+.time-and-skip-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+@media (max-width: 500px) {
+  .volume-container {
+    max-width: 20%;
+  }
+  .audio-player {
+    gap: 7px;
+  }
+}
+.volume-container > *:first-child,
+.time-and-seek-container > *:first-child {
+  /* padding-inline-start: var(--bitcount-left-padding); */
+}
+.volume-slider {
+  /* margin-block-start: 5px; */
+
+  /* writing-mode: bt-lr;
+    -webkit-appearance: slider-vertical; */
+  /* height: 60px; */
+  /* width: 20px; */
+  /*
+    input[type="range"]::-ms-fill-lower,
+    input[type="range"]::-ms-fill-upper {
+    background: #c0ffee;
+    }
+    input[type="range"]::-moz-range-track {
+    background: #c0ffee;
+    height: 6px;
+    border-radius: 3px;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+    background: #c0ffee;
+    height: 6px;
+    border-radius: 3px;
+    } */
+}
+.time-display-container {
+  margin-block-start: 5px;
+  font-size: 18px;
+}
+[type="range"] {
+  margin-inline-start: -1px;
+  margin-block-start: 5px;
+}

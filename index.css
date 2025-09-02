@@ -1,0 +1,61 @@
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+.bitcount-prop-double-x {
+  font-family: "Bitcount Prop Double", system-ui, sans-serif;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+  font-variation-settings: "slnt" 0, "CRSV" 0.5, "ELSH" 0, "ELXP" 0;
+}
+.scope-one-regular {
+  font-family: "Scope One", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.chau-philomene-one-regular {
+  font-family: "Chau Philomene One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.chau-philomene-one-regular-italic {
+  font-family: "Chau Philomene One", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+body {
+  font-family: "Bitcount Prop Double", system-ui, sans-serif;
+  margin-inline: 15px;
+  /* background: rgb(49, 49, 49); */
+}
+
+h1 {
+  font-size: 50px;
+  margin-block-start: 15px;
+  text-align: center;
+  /* color: white; */
+}
+
+button {
+  font-size: 1em;
+  font-family: var(--primary-font);
+  background: white;
+  border: none;
+  text-align: center;
+  padding: 4px;
+  border: 2px solid #000;
+}
+button:hover,
+input:hover {
+  cursor: pointer;
+}
+
+#main-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-block-end: 20px;
+}
