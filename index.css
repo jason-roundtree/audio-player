@@ -52,10 +52,3 @@ button:hover,
 input:hover {
   cursor: pointer;
 }
-
-#main-controls {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-block-end: 20px;
-}

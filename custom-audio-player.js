@@ -1,6 +1,8 @@
 class CustomAudioPlayer extends HTMLElement {
   constructor() {
     super();
+    this.currentSong = null;
+    this.nextSong = null;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
     this.skipAmount = 15;
@@ -12,7 +14,8 @@ class CustomAudioPlayer extends HTMLElement {
     this.playButtonIsPaused = "Play";
     this.attachShadow({ mode: "open" });
     this.addStyles();
-    this.buildPlayer();
+    this.buildPrimaryPlayerControls();
+    this.buildSecondaryControls();
     this.setupEventListeners();
   }
 
@@ -28,7 +31,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.shadowRoot.appendChild(customPlayerStylesLink);
   }
 
-  buildPlayer() {
+  buildPrimaryPlayerControls() {
     this.playerContainer = document.createElement("div");
     this.playerContainer.className = "audio-player";
 
@@ -41,12 +44,12 @@ class CustomAudioPlayer extends HTMLElement {
     this.audioInfo.appendChild(this.audioTitle);
     this.playerContainer.appendChild(this.audioInfo);
 
-    this.controlsContainer = document.createElement("div");
-    this.controlsContainer.className = "controls-container";
+    this.playerControlsContainer = document.createElement("div");
+    this.playerControlsContainer.className = "player-controls-container";
 
-    this.playPauseBtn = document.createElement("button");
-    this.playPauseBtn.className = "main-play-btn";
-    this.playPauseBtn.textContent = "Play";
+    this.playPauseButton = document.createElement("button");
+    this.playPauseButton.className = "main-play-btn";
+    this.playPauseButton.textContent = "Play";
 
     this.audio = document.createElement("audio");
     this.audio.className = "audio";
@@ -56,12 +59,13 @@ class CustomAudioPlayer extends HTMLElement {
     this.buildTimeAndSeekControls();
     this.buildVolume();
 
-    this.controlsContainer.appendChild(this.playPauseBtn);
-    this.controlsContainer.appendChild(this.audio);
-    this.controlsContainer.appendChild(this.timeAndSeekContainer);
-    this.controlsContainer.appendChild(this.volumeContainer);
+    this.playerControlsContainer.appendChild(this.playPauseButton);
+    this.playerControlsContainer.appendChild(this.audio);
+    // TODO: move these appendings to corresponding functions called above?
+    this.playerControlsContainer.appendChild(this.timeAndSeekContainer);
+    this.playerControlsContainer.appendChild(this.volumeContainer);
 
-    this.playerContainer.appendChild(this.controlsContainer);
+    this.playerContainer.appendChild(this.playerControlsContainer);
     this.shadowRoot.appendChild(this.playerContainer);
   }
 
@@ -128,9 +132,6 @@ class CustomAudioPlayer extends HTMLElement {
     this.muteToggle.className = "mute-toggle";
     this.muteToggle.textContent = this.muteButtonIsUnmuted;
 
-    this.volumeAndMuteContainer = document.createElement("div");
-    this.volumeAndMuteContainer.className = "volume-and-mute-container";
-
     this.volumeSlider = document.createElement("input");
     this.volumeSlider.className = "volume-slider";
     this.volumeSlider.type = "range";
@@ -145,6 +146,24 @@ class CustomAudioPlayer extends HTMLElement {
     this.volumeContainer.appendChild(this.volumeSlider);
   }
 
+  buildSecondaryControls() {
+    this.secondaryControlsContainer = document.createElement("div");
+    this.secondaryControlsContainer.className = "secondary-controls-container";
+
+    this.playAllButton = document.createElement("button");
+    this.playAllButton.className = "play-all-btn";
+    this.playAllButton.textContent = "Play All";
+
+    this.shuffleButton = document.createElement("button");
+    this.shuffleButton.className = "shuffle-btn";
+    this.shuffleButton.textContent = "Shuffle";
+
+    this.secondaryControlsContainer.appendChild(this.playAllButton);
+    this.secondaryControlsContainer.appendChild(this.shuffleButton);
+
+    this.playerContainer.appendChild(this.secondaryControlsContainer);
+  }
+
   updateMuteButton() {
     this.muteToggle.textContent = this.audio.muted
       ? this.muteButtonIsMuted
@@ -152,7 +171,7 @@ class CustomAudioPlayer extends HTMLElement {
   }
 
   setupEventListeners() {
-    this.playPauseBtn.addEventListener("click", () => {
+    this.playPauseButton.addEventListener("click", () => {
       this.updateTrackPlayButtons();
       this.togglePlay();
     });
@@ -239,7 +258,7 @@ class CustomAudioPlayer extends HTMLElement {
   }
 
   updatePlayPauseButton() {
-    this.playPauseBtn.textContent = this.audio.paused
+    this.playPauseButton.textContent = this.audio.paused
       ? this.playButtonIsPaused
       : this.playButtonIsPlaying;
   }
@@ -274,6 +293,8 @@ class CustomAudioPlayer extends HTMLElement {
     if (trackList.length > 0) {
       this.audio.src = trackList[0].src;
       this.audioTitle.textContent = trackList[0].title;
+      this.currentSong = trackList[0].title;
+      this.nextSong = trackList[1] && trackList[1];
     }
 
     trackList.forEach((track, idx) => {
@@ -300,6 +321,7 @@ class CustomAudioPlayer extends HTMLElement {
           : this.playButtonIsPaused;
       trackPlayPauseButton.addEventListener("click", () => {
         if (this.audio.src.endsWith(track.src)) {
+          // this track is already set to player
           if (!this.audio.paused) {
             this.audio.pause();
             this.updateTrackPlayButtons();
@@ -308,10 +330,12 @@ class CustomAudioPlayer extends HTMLElement {
             this.updateTrackPlayButtons(trackPlayPauseButton);
           }
         } else {
+          // load new track
           this.audio.src = track.src;
           this.audioTitle.textContent = track.title;
           this.audio.currentTime = 0;
           this.audio.play();
+          this.currentSong = track.title;
           this.updateTrackPlayButtons(trackPlayPauseButton);
         }
       });
