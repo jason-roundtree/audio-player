@@ -1,8 +1,11 @@
 class CustomAudioPlayer extends HTMLElement {
   constructor() {
     super();
-    this.currentSong = null;
-    this.nextSong = null;
+    this.trackList = [];
+    this.currentTrack = null;
+    this.playerIsPlaying = false;
+    this.nextTrack = null;
+    this.playAllIsActive = false;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
     this.skipAmount = 15;
@@ -47,9 +50,9 @@ class CustomAudioPlayer extends HTMLElement {
     this.playerControlsContainer = document.createElement("div");
     this.playerControlsContainer.className = "player-controls-container";
 
-    this.playPauseButton = document.createElement("button");
-    this.playPauseButton.className = "main-play-btn";
-    this.playPauseButton.textContent = "Play";
+    this.mainPlayButton = document.createElement("button");
+    this.mainPlayButton.className = "main-play-btn";
+    this.mainPlayButton.textContent = "Play";
 
     this.audio = document.createElement("audio");
     this.audio.className = "audio";
@@ -59,7 +62,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.buildTimeAndSeekControls();
     this.buildVolume();
 
-    this.playerControlsContainer.appendChild(this.playPauseButton);
+    this.playerControlsContainer.appendChild(this.mainPlayButton);
     this.playerControlsContainer.appendChild(this.audio);
     // TODO: move these appendings to corresponding functions called above?
     this.playerControlsContainer.appendChild(this.timeAndSeekContainer);
@@ -170,16 +173,136 @@ class CustomAudioPlayer extends HTMLElement {
       : this.muteButtonIsUnmuted;
   }
 
+  cueUpNextTrack() {}
+
+  formatTime(seconds) {
+    if (isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
+  togglePlay() {
+    if (this.audio.paused) {
+      this.audio.play();
+    } else {
+      this.audio.pause();
+    }
+  }
+
+  getNextTrack() {
+    const currentIndex = this.trackList.findIndex(
+      (track) => track.title === this.currentTrack.title
+    );
+    const nextIndex = (currentIndex + 1) % this.trackList.length;
+    return this.trackList[nextIndex];
+  }
+
+  playTrack(track) {
+    this.audio.src = track.src;
+    this.audioTitle.textContent = track.title;
+    this.audio.currentTime = 0;
+    this.audio.play();
+    this.currentTrack = track;
+    this.nextTrack = this.getNextTrack();
+  }
+
+  updateMainPlayButton() {
+    this.mainPlayButton.textContent = this.audio.paused
+      ? this.playButtonIsPaused
+      : this.playButtonIsPlaying;
+  }
+
+  updateTrackPlayButtons() {
+    Array.from(
+      this.trackListContainer.querySelectorAll(".track-play-btn")
+    ).forEach((btn) => (btn.textContent = this.playButtonIsPaused));
+    if (this.playerIsPlaying && this.currentTrack) {
+      const buttonForPlayingTrack = this.trackListContainer.querySelector(
+        `.track-play-btn[data-track-title="${this.currentTrack.title}"]`
+      );
+      if (buttonForPlayingTrack) {
+        buttonForPlayingTrack.textContent = this.playButtonIsPlaying;
+      }
+    }
+  }
+
+  setTrackList(trackList) {
+    this.trackList = trackList;
+    if (this.trackListContainer) {
+      this.trackListContainer.remove();
+    }
+    this.trackListContainer = document.createElement("div");
+    this.trackListContainer.className = "track-list";
+
+    if (trackList.length > 0) {
+      this.audio.src = trackList[0].src;
+      this.audioTitle.textContent = trackList[0].title;
+      this.currentTrack = trackList[0];
+      this.nextTrack = trackList[1] && trackList[1];
+    }
+
+    trackList.forEach((track, idx) => {
+      const item = document.createElement("div");
+      item.className = "track-list-item";
+
+      const title = document.createElement("span");
+      title.className = "track-title";
+      title.textContent = track.title;
+
+      const durationSpan = document.createElement("span");
+      durationSpan.className = "track-duration";
+      durationSpan.textContent = "...";
+      const tempAudio = new Audio(track.src);
+      tempAudio.addEventListener("loadedmetadata", () => {
+        durationSpan.textContent = this.formatTime(tempAudio.duration);
+      });
+
+      const trackPlayButton = document.createElement("button");
+      trackPlayButton.className = "track-play-btn";
+      trackPlayButton.dataset.trackTitle = track.title;
+      trackPlayButton.textContent =
+        this.audio.src.endsWith(track.src) && !this.audio.paused
+          ? this.playButtonIsPlaying
+          : this.playButtonIsPaused;
+      trackPlayButton.addEventListener("click", () => {
+        if (this.audio.src.endsWith(track.src)) {
+          // this track is already set to player
+          if (!this.audio.paused) {
+            this.audio.pause();
+            this.updateTrackPlayButtons();
+          } else {
+            this.audio.play();
+            this.updateTrackPlayButtons();
+          }
+        } else {
+          this.playTrack(track);
+          this.updateTrackPlayButtons();
+        }
+      });
+
+      item.appendChild(trackPlayButton);
+      item.appendChild(title);
+      item.appendChild(durationSpan);
+      this.trackListContainer.appendChild(item);
+    });
+
+    this.playerContainer.appendChild(this.trackListContainer);
+  }
+
   setupEventListeners() {
-    this.playPauseButton.addEventListener("click", () => {
-      this.updateTrackPlayButtons();
+    this.mainPlayButton.addEventListener("click", () => {
       this.togglePlay();
     });
     this.audio.addEventListener("play", () => {
-      this.updatePlayPauseButton();
+      this.playerIsPlaying = true;
+      this.updateMainPlayButton();
+      this.updateTrackPlayButtons();
     });
     this.audio.addEventListener("pause", () => {
-      this.updatePlayPauseButton();
+      this.playerIsPlaying = false;
+      this.updateMainPlayButton();
+      this.updateTrackPlayButtons();
     });
     this.volumeSlider.addEventListener("input", () => {
       this.audio.volume = parseFloat(this.volumeSlider.value);
@@ -214,24 +337,23 @@ class CustomAudioPlayer extends HTMLElement {
       "click",
       () => (this.audio.currentTime -= this.skipAmount)
     );
-    // this.audio.addEventListener("ended", () => {
-    //   console.log("allTracksInOrder: ", allTracksInOrder);
-    //   const currentIndex = allTracksInOrder.indexOf(
-    //     this.getAttribute("track-title")
-    //   );
-    //   let nextTrackIndex = currentIndex + 1;
-    //   if (nextTrackIndex > allTracksInOrder.length - 1) {
-    //     nextTrackIndex = 0;
-    //   }
-    //   this.audio.src = allTracksInOrder[nextTrackIndex];
-    // });
-  }
-
-  formatTime(seconds) {
-    if (isNaN(seconds)) return "0:00";
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return m + ":" + String(s).padStart(2, "0");
+    this.playAllButton.addEventListener("click", () => {
+      this.playAllIsActive = !this.playAllIsActive;
+      this.playAllButton.classList.toggle(
+        "btn-is-active",
+        this.playAllIsActive
+      );
+      if (this.playAllIsActive && this.audio.paused) {
+        this.audio.play();
+        this.updateTrackPlayButtons();
+      }
+    });
+    this.audio.addEventListener("ended", () => {
+      this.updateTrackPlayButtons();
+      if (this.playAllIsActive) {
+        this.playTrack(this.nextTrack);
+      }
+    });
   }
 
   static get observedAttributes() {
@@ -247,106 +369,6 @@ class CustomAudioPlayer extends HTMLElement {
         this.audioTitle.textContent = newValue;
         break;
     }
-  }
-
-  togglePlay() {
-    if (this.audio.paused) {
-      this.audio.play();
-    } else {
-      this.audio.pause();
-    }
-  }
-
-  updatePlayPauseButton() {
-    this.playPauseButton.textContent = this.audio.paused
-      ? this.playButtonIsPaused
-      : this.playButtonIsPlaying;
-  }
-
-  pauseLastPlayedTrack() {
-    // const players = document.querySelectorAll("custom-audio-player");
-    // players.forEach((player) => {
-    //   if (player !== this) {
-    //     player.audio.pause();
-    //   }
-    // });
-    // const lastPlayedTrack = document.querySelector("[is-playing]");
-    // if (lastPlayedTrack) {
-    //   lastPlayedTrack.audio.pause();
-    // }
-  }
-
-  updateTrackPlayButtons(activeBtn) {
-    Array.from(
-      this.trackListContainer.querySelectorAll(".track-play-btn")
-    ).forEach((btn) => (btn.textContent = this.playButtonIsPaused));
-    if (activeBtn) activeBtn.textContent = this.playButtonIsPlaying;
-  }
-
-  setTrackList(trackList) {
-    if (this.trackListContainer) {
-      this.trackListContainer.remove();
-    }
-    this.trackListContainer = document.createElement("div");
-    this.trackListContainer.className = "track-list";
-
-    if (trackList.length > 0) {
-      this.audio.src = trackList[0].src;
-      this.audioTitle.textContent = trackList[0].title;
-      this.currentSong = trackList[0].title;
-      this.nextSong = trackList[1] && trackList[1];
-    }
-
-    trackList.forEach((track, idx) => {
-      const item = document.createElement("div");
-      item.className = "track-list-item";
-
-      const title = document.createElement("span");
-      title.className = "track-title";
-      title.textContent = track.title;
-
-      const durationSpan = document.createElement("span");
-      durationSpan.className = "track-duration";
-      durationSpan.textContent = "...";
-      const tempAudio = new Audio(track.src);
-      tempAudio.addEventListener("loadedmetadata", () => {
-        durationSpan.textContent = this.formatTime(tempAudio.duration);
-      });
-
-      const trackPlayPauseButton = document.createElement("button");
-      trackPlayPauseButton.className = "track-play-btn";
-      trackPlayPauseButton.textContent =
-        this.audio.src.endsWith(track.src) && !this.audio.paused
-          ? this.playButtonIsPlaying
-          : this.playButtonIsPaused;
-      trackPlayPauseButton.addEventListener("click", () => {
-        if (this.audio.src.endsWith(track.src)) {
-          // this track is already set to player
-          if (!this.audio.paused) {
-            this.audio.pause();
-            this.updateTrackPlayButtons();
-          } else {
-            this.audio.play();
-            this.updateTrackPlayButtons(trackPlayPauseButton);
-          }
-        } else {
-          // load new track
-          this.audio.src = track.src;
-          this.audioTitle.textContent = track.title;
-          this.audio.currentTime = 0;
-          this.audio.play();
-          this.currentSong = track.title;
-          this.updateTrackPlayButtons(trackPlayPauseButton);
-        }
-      });
-
-      item.appendChild(trackPlayPauseButton);
-      item.appendChild(title);
-      item.appendChild(durationSpan);
-      this.trackListContainer.appendChild(item);
-    });
-
-    this.playerContainer.appendChild(this.trackListContainer);
   }
 }
 

@@ -138,3 +138,8 @@ button {
 .secondary-controls-container button {
   padding: 2px 4px;
 }
+.btn-is-active {
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* inward shadow */
+  transform: translateY(2px); /* pushes it down */
+  background: #d0d0d0;
+}
