@@ -4,10 +4,10 @@ class CustomAudioPlayer extends HTMLElement {
     this.trackList = [];
     this.playerIsPlaying = false;
     this.currentTrack = null;
+    this.autoplayIsActive = true;
     /** not used when shuffle is active */
     this.nextTrack = null;
     this.lastPlayedTracks = [];
-    this.playAllIsActive = false;
     this.shuffleIsActive = false;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
@@ -156,15 +156,15 @@ class CustomAudioPlayer extends HTMLElement {
     this.secondaryControlsContainer = document.createElement("div");
     this.secondaryControlsContainer.className = "secondary-controls-container";
 
-    this.playAllButton = document.createElement("button");
-    this.playAllButton.className = "play-all-btn";
-    this.playAllButton.textContent = "Play All";
+    this.autoplayTracksButton = document.createElement("button");
+    this.autoplayTracksButton.className = "autoplay-btn btn-is-active";
+    this.autoplayTracksButton.textContent = "Autoplay";
 
     this.shuffleButton = document.createElement("button");
     this.shuffleButton.className = "shuffle-btn";
     this.shuffleButton.textContent = "Shuffle";
 
-    this.secondaryControlsContainer.appendChild(this.playAllButton);
+    this.secondaryControlsContainer.appendChild(this.autoplayTracksButton);
     this.secondaryControlsContainer.appendChild(this.shuffleButton);
 
     this.playerContainer.appendChild(this.secondaryControlsContainer);
@@ -324,74 +324,90 @@ class CustomAudioPlayer extends HTMLElement {
     this.mainPlayButton.addEventListener("click", () => {
       this.togglePlay();
     });
+
     this.audio.addEventListener("play", () => {
       this.playerIsPlaying = true;
       this.updateLastPlayedTracks(this.currentTrack);
       this.updateMainPlayButton();
       this.updateTrackPlayButtons();
     });
+
     this.audio.addEventListener("pause", () => {
       this.playerIsPlaying = false;
       this.updateMainPlayButton();
       this.updateTrackPlayButtons();
     });
+
     this.volumeSlider.addEventListener("input", () => {
       this.audio.volume = parseFloat(this.volumeSlider.value);
       this.audio.muted = this.audio.volume === 0;
       this.updateMuteButton();
     });
+
     this.seekBar.addEventListener("input", () => {
       this.audio.currentTime = parseFloat(this.seekBar.value);
     });
+
     this.audio.addEventListener("loadedmetadata", () => {
       this.durationDisplay.textContent = this.formatTime(this.audio.duration);
       this.seekBar.max = this.audio.duration;
       this.seekBar.step = "0.01";
       this.seekBar.value = 0;
     });
+
     this.audio.addEventListener("timeupdate", () => {
       this.seekBar.value = this.audio.currentTime;
       this.currentTimeDisplay.textContent = this.formatTime(
         this.audio.currentTime
       );
     });
+
     this.muteToggle.addEventListener("click", () => {
       this.audio.muted = !this.audio.muted;
       this.updateMuteButton();
       this.volumeSlider.value = this.audio.muted ? "0" : "1";
     });
+
     this.fastForwardButton.addEventListener(
       "click",
       () => (this.audio.currentTime += this.skipAmount)
     );
+
     this.rewindButton.addEventListener(
       "click",
       () => (this.audio.currentTime -= this.skipAmount)
     );
-    this.playAllButton.addEventListener("click", () => {
-      this.playAllIsActive = !this.playAllIsActive;
-      this.playAllButton.classList.toggle(
-        "btn-is-active",
-        this.playAllIsActive
-      );
-      if (this.playAllIsActive && this.audio.paused) {
-        this.audio.play();
-        this.updateTrackPlayButtons();
-      }
-    });
+
     this.shuffleButton.addEventListener("click", () => {
       this.shuffleIsActive = !this.shuffleIsActive;
       this.shuffleButton.classList.toggle(
         "btn-is-active",
         this.shuffleIsActive
       );
+
+      if (!this.shuffleIsActive) {
+        this.nextTrack = this.getNextTrack();
+      } else {
+        this.nextTrack = this.getShuffledNextTrack();
+      }
     });
+
+    this.autoplayTracksButton.addEventListener("click", () => {
+      this.autoplayIsActive = !this.autoplayIsActive;
+      this.autoplayTracksButton.classList.toggle(
+        "btn-is-active",
+        this.autoplayIsActive
+      );
+      if (this.autoplayIsActive && !this.playerIsPlaying) {
+        this.audio.play();
+      }
+    });
+
     this.audio.addEventListener("ended", () => {
       this.updateTrackPlayButtons();
       if (this.shuffleIsActive) {
         this.playTrack(this.getShuffledNextTrack());
-      }
-      if (this.playAllIsActive) {
+      } else if (this.autoplayIsActive) {
         this.playTrack(this.nextTrack);
       }
     });
