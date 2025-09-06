@@ -2,10 +2,13 @@ class CustomAudioPlayer extends HTMLElement {
   constructor() {
     super();
     this.trackList = [];
-    this.currentTrack = null;
     this.playerIsPlaying = false;
+    this.currentTrack = null;
+    /** not used when shuffle is active */
     this.nextTrack = null;
+    this.lastPlayedTracks = [];
     this.playAllIsActive = false;
+    this.shuffleIsActive = false;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
     this.skipAmount = 15;
@@ -173,8 +176,6 @@ class CustomAudioPlayer extends HTMLElement {
       : this.muteButtonIsUnmuted;
   }
 
-  cueUpNextTrack() {}
-
   formatTime(seconds) {
     if (isNaN(seconds)) return "0:00";
     const m = Math.floor(seconds / 60);
@@ -190,15 +191,8 @@ class CustomAudioPlayer extends HTMLElement {
     }
   }
 
-  getNextTrack() {
-    const currentIndex = this.trackList.findIndex(
-      (track) => track.title === this.currentTrack.title
-    );
-    const nextIndex = (currentIndex + 1) % this.trackList.length;
-    return this.trackList[nextIndex];
-  }
-
   playTrack(track) {
+    console.log("playTrack track", track);
     this.audio.src = track.src;
     this.audioTitle.textContent = track.title;
     this.audio.currentTime = 0;
@@ -225,6 +219,42 @@ class CustomAudioPlayer extends HTMLElement {
         buttonForPlayingTrack.textContent = this.playButtonIsPlaying;
       }
     }
+  }
+
+  getNextTrack() {
+    if (this.shuffleIsActive) {
+      return this.getShuffledNextTrack();
+    } else {
+      const currentIndex = this.trackList.findIndex(
+        (track) => track.title === this.currentTrack.title
+      );
+      const nextIndex = (currentIndex + 1) % this.trackList.length;
+      return this.trackList[nextIndex];
+    }
+  }
+
+  getShuffledNextTrack() {
+    const trackListWithoutLastPlayedTracks = this.trackList.filter(
+      (track) => !this.lastPlayedTracks.find((t) => t.title === track.title)
+    );
+    if (trackListWithoutLastPlayedTracks.length === 0) {
+      // If all tracks have been played, reset lastPlayedTracks and use full list
+      this.lastPlayedTracks = [];
+      return this.trackList[Math.floor(Math.random() * this.trackList.length)];
+    }
+    const randomIndex = Math.floor(
+      Math.random() * trackListWithoutLastPlayedTracks.length
+    );
+    return trackListWithoutLastPlayedTracks[randomIndex];
+  }
+
+  updateLastPlayedTracks(track) {
+    const TRACK_MEMORY_LIMIT = 3;
+    this.lastPlayedTracks.unshift(track);
+    if (this.lastPlayedTracks.length > TRACK_MEMORY_LIMIT) {
+      this.lastPlayedTracks.pop();
+    }
+    console.log("this.lastPlayedTracks", this.lastPlayedTracks);
   }
 
   setTrackList(trackList) {
@@ -296,6 +326,7 @@ class CustomAudioPlayer extends HTMLElement {
     });
     this.audio.addEventListener("play", () => {
       this.playerIsPlaying = true;
+      this.updateLastPlayedTracks(this.currentTrack);
       this.updateMainPlayButton();
       this.updateTrackPlayButtons();
     });
@@ -348,28 +379,35 @@ class CustomAudioPlayer extends HTMLElement {
         this.updateTrackPlayButtons();
       }
     });
+    this.shuffleButton.addEventListener("click", () => {
+      this.shuffleIsActive = !this.shuffleIsActive;
+      this.shuffleButton.classList.toggle(
+        "btn-is-active",
+        this.shuffleIsActive
+      );
+    });
     this.audio.addEventListener("ended", () => {
       this.updateTrackPlayButtons();
+      if (this.shuffleIsActive) {
+        this.playTrack(this.getShuffledNextTrack());
+      }
       if (this.playAllIsActive) {
         this.playTrack(this.nextTrack);
       }
     });
   }
 
-  static get observedAttributes() {
-    return ["src", "track-title"];
-  }
+  //   static get observedAttributes() {
+  //     return [""];
+  //   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    switch (name) {
-      case "src":
-        this.audio.src = newValue;
-        break;
-      case "track-title":
-        this.audioTitle.textContent = newValue;
-        break;
-    }
-  }
+  //   attributeChangedCallback(name, oldValue, newValue) {
+  //     switch (name) {
+  //       case "":
+  //         this.audio.src = newValue;
+  //         break;
+  //     }
+  //   }
 }
 
 customElements.define("custom-audio-player", CustomAudioPlayer);
