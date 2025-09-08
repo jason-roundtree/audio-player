@@ -9,6 +9,19 @@ button {
   padding: 8px;
   /* background: #eed6fa; */
 }
+:host {
+  font-size: 18px;
+}
+@media (max-width: 900px) {
+  :host {
+    font-size: 16px;
+  }
+}
+@media (max-width: 620px) {
+  :host {
+    font-size: 13px;
+  }
+}
 .audio-player {
   /* --bitcount-left-padding: 4px; */
   --primary-font: "Bitcount Prop Double", system-ui, sans-serif;
@@ -22,11 +35,18 @@ button {
   /* color: white; */
   border: 2px solid #000;
 }
+
 .audio-info {
   padding-block-end: 10px;
 }
 .audio-title {
-  font-size: 2em;
+  font-size: 1.5rem;
+}
+.play-and-skip-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block-start: 0.5rem;
 }
 .player-controls-container {
   display: flex;
@@ -36,7 +56,7 @@ button {
 .main-play-btn {
   align-self: stretch;
   /* width: 15%; */
-  min-width: 65px;
+  /* min-width: 65px; */
   flex: 0;
 }
 .time-and-seek-container {
@@ -53,7 +73,6 @@ button {
 }
 .mute-toggle {
   width: fit-content;
-  font-size: 1.1em;
   padding: var(--small-button-padding);
   /* margin-inline-end: 4px; */
   /* padding-inline-start: var(--bitcount-left-padding); */
@@ -109,7 +128,7 @@ button {
 }
 .time-display-container {
   margin-block-start: 5px;
-  font-size: 18px;
+  /* font-size: 18px; */
 }
 [type="range"] {
   margin-inline-start: -1px;
@@ -128,7 +147,7 @@ button {
   padding: 2px 4px;
 }
 .track-title {
-  font-size: 20px;
+  /* font-size: 20px; */
 }
 .secondary-controls-container {
   display: flex;
@@ -141,5 +160,10 @@ button {
 .btn-is-active {
   box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* inward shadow */
   transform: translateY(2px); /* pushes it down */
+  background: #d0d0d0;
+}
+button:active {
+  box-shadow: inset 2px 2px 5px rgba(144, 139, 139, 0.4);
+  transform: translateY(2px);
   background: #d0d0d0;
 }

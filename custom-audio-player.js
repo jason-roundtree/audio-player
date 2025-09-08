@@ -2,9 +2,10 @@ class CustomAudioPlayer extends HTMLElement {
   constructor() {
     super();
     this.trackList = [];
+    // TODO: replace with function that checks current player state instead of using flag
     this.playerIsPlaying = false;
     this.currentTrack = null;
-    this.autoplayIsActive = true;
+    this.autoplayIsActive = false;
     /** not used when shuffle is active */
     this.nextTrack = null;
     this.lastPlayedTracks = [];
@@ -53,10 +54,6 @@ class CustomAudioPlayer extends HTMLElement {
     this.playerControlsContainer = document.createElement("div");
     this.playerControlsContainer.className = "player-controls-container";
 
-    this.mainPlayButton = document.createElement("button");
-    this.mainPlayButton.className = "main-play-btn";
-    this.mainPlayButton.textContent = "Play";
-
     this.audio = document.createElement("audio");
     this.audio.className = "audio";
     this.audio.setAttribute("preload", "auto");
@@ -65,13 +62,22 @@ class CustomAudioPlayer extends HTMLElement {
     this.buildTimeAndSeekControls();
     this.buildVolume();
 
-    this.playerControlsContainer.appendChild(this.mainPlayButton);
     this.playerControlsContainer.appendChild(this.audio);
-    // TODO: move these appendings to corresponding functions called above?
     this.playerControlsContainer.appendChild(this.timeAndSeekContainer);
     this.playerControlsContainer.appendChild(this.volumeContainer);
 
     this.playerContainer.appendChild(this.playerControlsContainer);
+
+    // New container for play and skip buttons
+    this.playAndSkipContainer = document.createElement("div");
+    this.playAndSkipContainer.className = "play-and-skip-container";
+    this.mainPlayButton = document.createElement("button");
+    this.mainPlayButton.className = "main-play-btn";
+    this.mainPlayButton.textContent = "Play";
+    this.playAndSkipContainer.appendChild(this.mainPlayButton);
+    this.playAndSkipContainer.appendChild(this.skipTimeButtonContainer);
+    this.playerContainer.appendChild(this.playAndSkipContainer);
+
     this.shadowRoot.appendChild(this.playerContainer);
   }
 
@@ -157,7 +163,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.secondaryControlsContainer.className = "secondary-controls-container";
 
     this.autoplayTracksButton = document.createElement("button");
-    this.autoplayTracksButton.className = "autoplay-btn btn-is-active";
+    this.autoplayTracksButton.className = "autoplay-btn";
     this.autoplayTracksButton.textContent = "Autoplay";
 
     this.shuffleButton = document.createElement("button");
@@ -191,14 +197,16 @@ class CustomAudioPlayer extends HTMLElement {
     }
   }
 
-  playTrack(track) {
-    console.log("playTrack track", track);
+  loadTrack(track) {
     this.audio.src = track.src;
     this.audioTitle.textContent = track.title;
     this.audio.currentTime = 0;
-    this.audio.play();
     this.currentTrack = track;
     this.nextTrack = this.getNextTrack();
+  }
+
+  playCurrentTrack() {
+    this.audio.play();
   }
 
   updateMainPlayButton() {
@@ -306,7 +314,8 @@ class CustomAudioPlayer extends HTMLElement {
             this.updateTrackPlayButtons();
           }
         } else {
-          this.playTrack(track);
+          this.loadTrack(track);
+          this.playCurrentTrack();
           this.updateTrackPlayButtons();
         }
       });
@@ -368,10 +377,22 @@ class CustomAudioPlayer extends HTMLElement {
       this.volumeSlider.value = this.audio.muted ? "0" : "1";
     });
 
-    this.fastForwardButton.addEventListener(
-      "click",
-      () => (this.audio.currentTime += this.skipAmount)
-    );
+    this.fastForwardButton.addEventListener("click", () => {
+      const newTime = this.audio.currentTime + this.skipAmount;
+      if (newTime >= this.audio.duration) {
+        this.audio.currentTime = this.audio.duration;
+        this.loadTrack(this.getNextTrack());
+        if (this.autoplayIsActive && this.playerIsPlaying) {
+          this.playCurrentTrack();
+        } else if (this.playerIsPlaying) {
+          this.playerIsPlaying = false;
+          this.updateMainPlayButton();
+          this.updateTrackPlayButtons();
+        }
+      } else {
+        this.audio.currentTime = newTime;
+      }
+    });
 
     this.rewindButton.addEventListener(
       "click",
@@ -406,9 +427,11 @@ class CustomAudioPlayer extends HTMLElement {
     this.audio.addEventListener("ended", () => {
       this.updateTrackPlayButtons();
       if (this.shuffleIsActive) {
-        this.playTrack(this.getShuffledNextTrack());
+        this.loadTrack(this.getShuffledNextTrack());
+        this.playCurrentTrack();
       } else if (this.autoplayIsActive) {
-        this.playTrack(this.nextTrack);
+        this.loadTrack(this.nextTrack);
+        this.playCurrentTrack();
       }
     });
   }

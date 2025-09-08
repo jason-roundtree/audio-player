@@ -29,7 +29,7 @@
 body {
   font-family: "Bitcount Prop Double", system-ui, sans-serif;
   margin-inline: 15px;
-  /* background: rgb(49, 49, 49); */
+  background: #000;
 }
 
 h1 {
@@ -40,7 +40,7 @@ h1 {
 }
 
 button {
-  font-size: 1em;
+  /* font-size: 1em; */
   font-family: var(--primary-font);
   background: white;
   border: none;
@@ -49,7 +49,38 @@ button {
   border: 2px solid #000;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
 }
+
 button:hover,
 input:hover {
   cursor: pointer;
 }
+
+/* body {
+  background-image: url("./images/IMG_5392.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+} */
+
+/* body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("./images/IMG_5603.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  filter: blur(4px);
+} */
+
+/* body {
+  display: flex;
+  align-content: center;
+  align-items: center;
+  height: 100vh;
+  justify-content: center;
+} */
