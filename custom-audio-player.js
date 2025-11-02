@@ -286,15 +286,28 @@ class CustomAudioPlayer extends HTMLElement {
   }
 
   updateTrackPlayButtons() {
-    Array.from(
-      this.trackListContainer.querySelectorAll(".track-play-btn")
-    ).forEach((btn) => (btn.textContent = this.playButtonIsPaused));
+    if (!this.trackListContainer) return;
+
+    const prevTrack = this.trackListContainer.querySelector(
+      ".track-list-item.is-playing"
+    );
+    if (prevTrack) {
+      const prevTrackPlayBtn = prevTrack.querySelector(".track-play-btn");
+      if (prevTrackPlayBtn)
+        prevTrackPlayBtn.textContent = this.playButtonIsPaused;
+      prevTrack.classList.remove("is-playing");
+    }
+
     if (this.playerIsPlaying && this.currentTrack) {
-      const buttonForPlayingTrack = this.trackListContainer.querySelector(
-        `.track-play-btn[data-track-title="${this.currentTrack.title}"]`
+      const itemForPlayingTrack = this.trackListContainer.querySelector(
+        `.track-list-item[data-track-title="${this.currentTrack.title}"]`
       );
-      if (buttonForPlayingTrack) {
-        buttonForPlayingTrack.textContent = this.playButtonIsPlaying;
+      if (itemForPlayingTrack) {
+        const buttonForPlayingTrack =
+          itemForPlayingTrack.querySelector(".track-play-btn");
+        if (buttonForPlayingTrack)
+          buttonForPlayingTrack.textContent = this.playButtonIsPlaying;
+        itemForPlayingTrack.classList.add("is-playing");
       }
     }
   }
@@ -369,7 +382,7 @@ class CustomAudioPlayer extends HTMLElement {
 
       const trackPlayButton = document.createElement("button");
       trackPlayButton.className = "track-play-btn";
-      trackPlayButton.dataset.trackTitle = track.title;
+      item.dataset.trackTitle = track.title;
       trackPlayButton.textContent =
         this.audio.src.endsWith(track.src) && !this.audio.paused
           ? this.playButtonIsPlaying
@@ -495,7 +508,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.shuffleButton.addEventListener("click", () => {
       this.shuffleIsActive = !this.shuffleIsActive;
       this.shuffleButton.classList.toggle(
-        "btn-is-active",
+        "btn-is-selected",
         this.shuffleIsActive
       );
 
@@ -509,7 +522,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.autoplayTracksButton.addEventListener("click", () => {
       this.autoplayIsActive = !this.autoplayIsActive;
       this.autoplayTracksButton.classList.toggle(
-        "btn-is-active",
+        "btn-is-selected",
         this.autoplayIsActive
       );
       if (this.autoplayIsActive) {

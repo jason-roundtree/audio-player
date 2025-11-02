@@ -14,7 +14,8 @@
   --small-button-padding: 2px 4px;
   --medium-button-padding: 4px 8px;
 }
-@media (max-width: var(--breakpoint-medium)) {
+@media (max-width: 900px) {
+  /* @media (max-width: var(--breakpoint-medium)) { */
   :host {
     font-size: 18px;
   }
@@ -38,8 +39,25 @@ button {
   font-family: "Victor Mono", monospace;
   letter-spacing: -0.5px;
   padding: 10px;
+  background: white;
+  text-align: center;
+  border: 1px solid #fba351;
 }
+
+button:active {
+  background: #fcdc84;
+}
+
 button:hover {
+  background-color: #fcdc84;
+}
+
+.btn-is-selected {
+  background: #fba351;
+}
+
+button:hover,
+input:hover {
   cursor: pointer;
 }
 
@@ -104,11 +122,6 @@ button:hover {
   border: none;
 }
 
-.mute-toggle .icon-speaker,
-.mute-toggle .icon-muted {
-  display: none;
-}
-
 .time-and-skip-container {
   display: flex;
   align-items: center;
@@ -152,6 +165,11 @@ button:hover {
   border-width: 1px;
 }
 
+.track-list-item.is-playing {
+  outline: 3px solid #fba351;
+  outline-offset: -3px;
+}
+
 .track-list-item:nth-of-type(odd) {
   background: #4c4c4c;
   border-color: #fcd26f;
@@ -170,9 +188,9 @@ button:hover {
 @media (max-width: 400px) {
   /* @media (max-width: var(--breakpoint-extra-small)) { */
   .track-play-btn {
-    flex: 0 0 40px;
-    min-width: 40px;
-    width: 40px;
+    flex: 0 0 45px;
+    min-width: 45px;
+    width: 45px;
     padding: 5px;
   }
   .volume-container {
@@ -184,14 +202,4 @@ button:hover {
   display: flex;
   gap: 10px;
   margin-block: 10px;
-}
-
-.btn-is-active {
-  background: #e6e1e7;
-}
-button:active {
-  background: #efe8f0;
-}
-button:hover {
-  background-color: #efe8f0;
 }
