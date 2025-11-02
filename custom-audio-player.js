@@ -10,9 +10,9 @@ class CustomAudioPlayer extends HTMLElement {
     this.nextTrack = null;
     this.lastPlayedTracks = [];
     this.shuffleIsActive = false;
+    this.skipAmount = 15;
     this.rewindIcon = "<<";
     this.fastForwardIcon = ">>";
-    this.skipAmount = 15;
     this.rewindAriaLabel = `Rewind ${this.skipAmount} seconds`;
     this.fastForwardAriaLabel = `Fast-forward ${this.skipAmount} seconds`;
     this.muteButtonIsUnmuted = "Mute";
@@ -105,6 +105,7 @@ class CustomAudioPlayer extends HTMLElement {
     this.rewindButton.className = "rewind";
     this.rewindButton.textContent = this.rewindIcon;
     this.rewindButton.setAttribute("aria-label", this.rewindAriaLabel);
+    this.rewindButton.setAttribute("title", this.rewindAriaLabel);
     this.fastForwardButton = document.createElement("button");
     this.fastForwardButton.className = "fast-forward";
     this.fastForwardButton.textContent = this.fastForwardIcon;
@@ -112,6 +113,7 @@ class CustomAudioPlayer extends HTMLElement {
       "aria-label",
       this.fastForwardAriaLabel
     );
+    this.fastForwardButton.setAttribute("title", this.fastForwardAriaLabel);
     this.skipTimeButtonContainer = document.createElement("div");
     this.skipTimeButtonContainer.className = "skip-time-button-container";
     this.skipTimeButtonContainer.appendChild(this.rewindButton);
@@ -142,7 +144,21 @@ class CustomAudioPlayer extends HTMLElement {
   buildVolume() {
     this.muteToggle = document.createElement("button");
     this.muteToggle.className = "mute-toggle";
-    this.muteToggle.textContent = this.muteButtonIsUnmuted;
+    this.muteToggle.setAttribute("aria-label", this.muteButtonIsUnmuted);
+    // single SVG with two grouped states: .icon-on (speaker + wave arcs) and .icon-off (speaker + X)
+    this.muteToggle.innerHTML = `
+      <svg class="mute-icon" width="25" height="25" viewBox="0 0 25 25" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <g class="icon-on">
+          <path d="M2 7v8h5l6 5V2L7 7H2z" fill="currentColor" />
+          <path d="M18 7 C20 9,20 13,18 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          <path d="M20 5 C23 9,23 13,20 17" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+        </g>
+        <g class="icon-off" style="display:none;">
+          <path d="M2 7v8h5l6 5V2L7 7H2z" fill="currentColor" />
+          <path d="M18 6 L24 16 M24 6 L18 16" transform="translate(-1,0)" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none" />
+        </g>
+      </svg>
+    `;
 
     this.volumeSlider = document.createElement("input");
     this.volumeSlider.className = "volume-slider";
@@ -177,16 +193,70 @@ class CustomAudioPlayer extends HTMLElement {
   }
 
   updateMuteButton() {
-    this.muteToggle.textContent = this.audio.muted
+    // update aria-label and visually-hidden text
+    const label = this.audio.muted
       ? this.muteButtonIsMuted
       : this.muteButtonIsUnmuted;
+    this.muteToggle.setAttribute("aria-label", label);
+    // toggle which SVG is visible and dim the speaker when muted
+    const iconOn = this.muteToggle.querySelector(".icon-on");
+    const iconOff = this.muteToggle.querySelector(".icon-off");
+    if (this.audio.muted) {
+      this.muteToggle.classList.add("is-muted");
+      if (iconOn) iconOn.style.display = "none";
+      if (iconOff) iconOff.style.display = "";
+      // dim via class (CSS handles color)
+    } else {
+      this.muteToggle.classList.remove("is-muted");
+      if (iconOn) iconOn.style.display = "";
+      if (iconOff) iconOff.style.display = "none";
+    }
   }
 
   formatTime(seconds) {
+    // optional second argument 'precision' can show fractional seconds (e.g. 1 = tenths)
+    // const precision = arguments.length > 1 ? arguments[1] : 0;
     if (isNaN(seconds)) return "0:00";
     const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return m + ":" + String(s).padStart(2, "0");
+    const secInt = Math.floor(seconds % 60);
+    let secStr = String(secInt).padStart(2, "0");
+    // if (precision > 0) {
+    //   const factor = Math.pow(10, precision);
+    //   const frac = Math.floor((seconds - Math.floor(seconds)) * factor);
+    //   secStr = `${secStr}.${String(frac).padStart(precision, "0")}`;
+    // }
+    return m + ":" + secStr;
+  }
+
+  // Smooth time updates using requestAnimationFrame while audio is playing
+  startTimeUpdater() {
+    if (this._timeRafId) return; // already running
+    const tick = () => {
+      // update seek bar and current time display (integer seconds)
+      if (this.seekBar) {
+        this.seekBar.value = this.audio.currentTime;
+      }
+      if (this.currentTimeDisplay) {
+        this.currentTimeDisplay.textContent = this.formatTime(
+          this.audio.currentTime
+        );
+      }
+      this._timeRafId = requestAnimationFrame(tick);
+    };
+    this._timeRafId = requestAnimationFrame(tick);
+  }
+
+  stopTimeUpdater() {
+    if (this._timeRafId) {
+      cancelAnimationFrame(this._timeRafId);
+      this._timeRafId = null;
+    }
+    // final sync
+    if (this.seekBar) this.seekBar.value = this.audio.currentTime;
+    if (this.currentTimeDisplay)
+      this.currentTimeDisplay.textContent = this.formatTime(
+        this.audio.currentTime
+      );
   }
 
   togglePlay() {
@@ -256,11 +326,12 @@ class CustomAudioPlayer extends HTMLElement {
     return trackListWithoutLastPlayedTracks[randomIndex];
   }
 
+  //   TODO: check this is working properly
   updateLastPlayedTracks(track) {
     const TRACK_MEMORY_LIMIT = 3;
-    this.lastPlayedTracks.unshift(track);
+    this.lastPlayedTracks.push(track);
     if (this.lastPlayedTracks.length > TRACK_MEMORY_LIMIT) {
-      this.lastPlayedTracks.pop();
+      this.lastPlayedTracks.shift();
     }
     console.log("this.lastPlayedTracks", this.lastPlayedTracks);
   }
@@ -329,6 +400,12 @@ class CustomAudioPlayer extends HTMLElement {
     this.playerContainer.appendChild(this.trackListContainer);
   }
 
+  isAudioPlaying() {
+    return (
+      !this.audio.paused && !this.audio.ended && this.audio.currentTime > 0
+    );
+  }
+
   setupEventListeners() {
     this.mainPlayButton.addEventListener("click", () => {
       this.togglePlay();
@@ -339,12 +416,16 @@ class CustomAudioPlayer extends HTMLElement {
       this.updateLastPlayedTracks(this.currentTrack);
       this.updateMainPlayButton();
       this.updateTrackPlayButtons();
+      // start smooth UI updates while playing
+      if (typeof this.startTimeUpdater === "function") this.startTimeUpdater();
     });
 
     this.audio.addEventListener("pause", () => {
       this.playerIsPlaying = false;
       this.updateMainPlayButton();
       this.updateTrackPlayButtons();
+      // stop smooth updates on pause
+      if (typeof this.stopTimeUpdater === "function") this.stopTimeUpdater();
     });
 
     this.volumeSlider.addEventListener("input", () => {
@@ -355,6 +436,11 @@ class CustomAudioPlayer extends HTMLElement {
 
     this.seekBar.addEventListener("input", () => {
       this.audio.currentTime = parseFloat(this.seekBar.value);
+      // immediate visual feedback while dragging (integer seconds)
+      if (this.currentTimeDisplay)
+        this.currentTimeDisplay.textContent = this.formatTime(
+          this.audio.currentTime
+        );
     });
 
     this.audio.addEventListener("loadedmetadata", () => {
@@ -365,10 +451,17 @@ class CustomAudioPlayer extends HTMLElement {
     });
 
     this.audio.addEventListener("timeupdate", () => {
-      this.seekBar.value = this.audio.currentTime;
-      this.currentTimeDisplay.textContent = this.formatTime(
-        this.audio.currentTime
-      );
+      // RAF updater handles smooth display when playing; keep this as a fallback
+      if (!this._timeRafId) {
+        this.seekBar.value = this.audio.currentTime;
+        if (this.currentTimeDisplay)
+          this.currentTimeDisplay.textContent = this.formatTime(
+            this.audio.currentTime
+          );
+      } else {
+        // ensure seek value stays in sync
+        this.seekBar.value = this.audio.currentTime;
+      }
     });
 
     this.muteToggle.addEventListener("click", () => {
@@ -419,8 +512,13 @@ class CustomAudioPlayer extends HTMLElement {
         "btn-is-active",
         this.autoplayIsActive
       );
-      if (this.autoplayIsActive && !this.playerIsPlaying) {
-        this.audio.play();
+      if (this.autoplayIsActive) {
+        if (this.audio.ended) {
+          this.loadTrack(this.nextTrack);
+          this.playCurrentTrack();
+        } else if (!this.playerIsPlaying) {
+          this.playCurrentTrack();
+        }
       }
     });
 

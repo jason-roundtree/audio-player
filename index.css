@@ -3,31 +3,32 @@
   padding: 0;
   margin: 0;
 }
-.bitcount-prop-double-x {
-  font-family: "Bitcount Prop Double", system-ui, sans-serif;
-  font-optical-sizing: auto;
-  font-weight: normal;
-  font-style: normal;
-  font-variation-settings: "slnt" 0, "CRSV" 0.5, "ELSH" 0, "ELXP" 0;
-}
-.scope-one-regular {
-  font-family: "Scope One", serif;
-  font-weight: 400;
-  font-style: normal;
-}
-.chau-philomene-one-regular {
-  font-family: "Chau Philomene One", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-.chau-philomene-one-regular-italic {
-  font-family: "Chau Philomene One", sans-serif;
-  font-weight: 400;
-  font-style: italic;
-}
+/* 
+"Bitcount Prop Double", system-ui;
+"Bitcount Single Ink", system-ui;
+"Nabla", system-ui;
+"Coral Pixels", serif;
+"Alumni Sans SC", sans-serif;
+"Xanh Mono", monospace;
+"Share Tech Mono", monospace;
+"VT323", monospace;
+"Gilda Display", serif;
+"Special Elite", system-ui;
+"IBM Plex Serif", serif;
+"DM Serif Display", serif;
+"Titillium Web", sans-serif;
+"DM Sans", sans-serif;
+"Raleway", sans-serif;
+"Sorts Mill Goudy", serif;
+"Victor Mono", monospace;
+"Nobile", sans-serif;
+"Orienta", sans-serif;
+"Forum", serif;
+"Arapey", serif;
+ */
 
 body {
-  font-family: "Bitcount Prop Double", system-ui, sans-serif;
+  font-family: "Forum", serif;
   margin-inline: 15px;
   background: #000;
 }
@@ -36,51 +37,28 @@ h1 {
   font-size: 50px;
   margin-block-start: 15px;
   text-align: center;
-  /* color: white; */
+  color: #fba351;
+  /* background: white; */
+  font-family: "Nabla", system-ui;
+  font-variation-settings: "EDPT" 100, "EHLT" 12;
+  /* font-weight: bold; */
+  /* Make background image show through the text */
+  /* background: url("./images/IMG_5607.jpg") no-repeat center center;
+  background-size: cover;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; */
 }
 
 button {
-  /* font-size: 1em; */
   font-family: var(--primary-font);
   background: white;
   border: none;
   text-align: center;
-  padding: 4px;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  border: 1px solid #9e969f;
 }
 
 button:hover,
 input:hover {
   cursor: pointer;
 }
-
-/* body {
-  background-image: url("./images/IMG_5392.jpg");
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-} */
-
-/* body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url("./images/IMG_5603.jpg");
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  z-index: -1;
-  filter: blur(4px);
-} */
-
-/* body {
-  display: flex;
-  align-content: center;
-  align-items: center;
-  height: 100vh;
-  justify-content: center;
-} */
